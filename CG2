@@ -1,0 +1,90 @@
+#include <iostream>
+#include <GL/glut.h>
+#include <cmath>  // Include this for round() function
+using namespace std;
+
+int Algo, type;
+
+void Init() {
+    glClearColor(0, 0, 0, 0);
+    glColor3f(0, 1, 0);
+    gluOrtho2D(0, 640, 0, 480);
+    glClear(GL_COLOR_BUFFER_BIT);
+}
+
+int sign(float a) {
+    return (a > 0) - (a < 0);
+}
+
+void drawPoint(int x, int y, int i, int &cnt) {
+    if (type == 1 || (type == 2 && i % 2 == 0) || (type == 3 && cnt <= 10)) {
+        glBegin(GL_POINTS);
+        glVertex2i(x, y);
+        glEnd();
+    }
+    cnt++;
+    if (cnt == 15) cnt = 1;
+}
+
+void Bresenham(int x1, int y1, int x2, int y2) {
+    int dx = abs(x2 - x1), dy = abs(y2 - y1);
+    int sx = sign(x2 - x1), sy = sign(y2 - y1);
+    int err = dx - dy, cnt = 1;
+    
+    while (true) {
+        drawPoint(x1, y1, dx > dy ? abs(x2 - x1) : abs(y2 - y1), cnt);
+        if (x1 == x2 && y1 == y2) break;
+        int e2 = 2 * err;
+        if (e2 > -dy) { err -= dy; x1 += sx; }
+        if (e2 < dx)  { err += dx; y1 += sy; }
+    }
+    glFlush();
+}
+
+void DDA(int x1, int y1, int x2, int y2) {
+    int dx = x2 - x1, dy = y2 - y1, steps = max(abs(dx), abs(dy)), cnt = 1;
+    float xin = dx / (float)steps, yin = dy / (float)steps;
+    float x = x1, y = y1;
+    
+    for (int i = 0; i <= steps; i++) {
+        drawPoint(round(x), round(y), i, cnt);  // Use round() here
+        x += xin; y += yin;
+    }
+    glFlush();
+}
+
+void display() {
+    DDA(0, 240, 640, 240);
+    Bresenham(320, 0, 320, 480);
+}
+
+void myMouse(int button, int state, int x, int y) {
+    static int x_start, y_start, flag = 0;
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+        if (!flag) {
+            x_start = x; y_start = 480 - y;
+            flag = 1;
+        } else {
+            int x_end = x, y_end = 480 - y;
+            if (Algo == 1) DDA(x_start, y_start, x_end, y_end);
+            else Bresenham(x_start, y_start, x_end, y_end);
+            flag = 0;
+        }
+    }
+    glFlush();
+}
+
+int main(int argc, char **argv) {
+    cout << "Select Algorithm: 1.DDA 2.Bresenham: "; cin >> Algo;
+    cout << "Select Line Type: 1.Simple 2.Dotted 3.Dashed: "; cin >> type;
+    if (!(Algo == 1 || Algo == 2) || !(type >= 1 && type <= 3)) return 0;
+
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutInitWindowSize(640, 480);
+    glutCreateWindow("Line Drawing");
+    Init();
+    glutDisplayFunc(display);
+    glutMouseFunc(myMouse);
+    glutMainLoop();
+}

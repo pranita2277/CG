@@ -1,0 +1,107 @@
+/*6 Implement the following polygon filling methods Boundary fill using mouse click,
+keyboard interface and menu driven programming*/
+
+#include <GL/glut.h>
+#include <iostream>
+#include <cmath>
+
+using namespace std;
+
+int fillColor[3] = {1, 0, 0}; // Default fill color = Red
+
+// Function to compare colors with a tolerance
+bool compareColors(float* color1, float* color2, float tolerance = 0.1f) {
+    return (fabs(color1[0] - color2[0]) < tolerance) &&
+           (fabs(color1[1] - color2[1]) < tolerance) &&
+           (fabs(color1[2] - color2[2]) < tolerance);
+}
+
+void boundaryFill(int x, int y, float* fillCol, float* borderCol) {
+    float pixel[3];
+    glReadPixels(x, y, 1, 1, GL_RGB, GL_FLOAT, pixel);
+
+    // Check if pixel is neither border nor fill color
+    if (!compareColors(pixel, borderCol) && !compareColors(pixel, fillCol)) {
+        glColor3fv(fillCol);
+        glBegin(GL_POINTS);
+        glVertex2i(x, y);
+        glEnd();
+        glFlush();
+
+        // Recursive calls for neighboring pixels
+        boundaryFill(x + 1, y, fillCol, borderCol);
+        boundaryFill(x - 1, y, fillCol, borderCol);
+        boundaryFill(x, y + 1, fillCol, borderCol);
+        boundaryFill(x, y - 1, fillCol, borderCol);
+    }
+}
+
+void mouse(int button, int state, int x, int y) {
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+        float borderColor[3] = {0, 0, 0}; // Black border
+        // Explicitly cast fillColor values to float to avoid narrowing conversion warning
+        float fillCol[3] = {static_cast<float>(fillColor[0]), 
+                             static_cast<float>(fillColor[1]), 
+                             static_cast<float>(fillColor[2])};
+        boundaryFill(x, 480 - y, fillCol, borderColor); // Adjust y
+    }
+}
+
+void keyboard(unsigned char key, int x, int y) {
+    if (key == 'b' || key == 'B') {
+        float borderColor[3] = {0, 0, 0};
+        // Explicitly cast fillColor values to float to avoid narrowing conversion warning
+        float fillCol[3] = {static_cast<float>(fillColor[0]), 
+                             static_cast<float>(fillColor[1]), 
+                             static_cast<float>(fillColor[2])};
+        boundaryFill(320, 240, fillCol, borderColor); // Fill from center
+    }
+}
+
+void menu(int option) {
+    if (option == 1) {
+        fillColor[0] = 1; fillColor[1] = 0; fillColor[2] = 0; // Red
+    } else if (option == 2) {
+        fillColor[0] = 0; fillColor[1] = 1; fillColor[2] = 0; // Green
+    } else if (option == 3) {
+        fillColor[0] = 0; fillColor[1] = 0; fillColor[2] = 1; // Blue
+    }
+}
+
+void drawPolygon() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    glColor3f(0, 0, 0); // Black border
+
+    glBegin(GL_LINE_LOOP);
+    glVertex2i(200, 200);
+    glVertex2i(400, 200);
+    glVertex2i(400, 400);
+    glVertex2i(200, 400);
+    glEnd();
+
+    glFlush();
+}
+
+void init() {
+    glClearColor(1, 1, 1, 1); // White background
+    gluOrtho2D(0, 640, 0, 480);
+}
+
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutInitWindowSize(640, 480);
+    glutCreateWindow("Boundary Fill - Mouse, Keyboard, Menu");
+    init();
+    glutDisplayFunc(drawPolygon);
+    glutMouseFunc(mouse);
+    glutKeyboardFunc(keyboard);
+
+    int menu_id = glutCreateMenu(menu);
+    glutAddMenuEntry("Fill Red", 1);
+    glutAddMenuEntry("Fill Green", 2);
+    glutAddMenuEntry("Fill Blue", 3);
+    glutAttachMenu(GLUT_RIGHT_BUTTON);
+
+    glutMainLoop();
+}

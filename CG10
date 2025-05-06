@@ -1,0 +1,138 @@
+/*
+10 Implement following 2D transformations on the object with respect to axis
+a. Scaling
+b. Rotation about arbitrary point
+c. Reflection
+*/
+
+#include <iostream>
+#include <GL/glut.h>
+#include <cmath>
+using namespace std;
+
+// Initial points of the object (Triangle in this case)
+float points[3][2] = {
+    {100.0f, 100.0f},
+    {200.0f, 100.0f},
+    {150.0f, 200.0f}
+};
+
+// Transformation matrices
+float scaleX = 1.0f, scaleY = 1.0f;
+float rotationAngle = 0.0f; // Rotation angle in degrees
+float reflectionFlag = 0; // Reflection flag (1 for x-axis, 2 for y-axis)
+
+// Initialize OpenGL settings
+void init() {
+    glClearColor(1, 1, 1, 0); // White background
+    glClear(GL_COLOR_BUFFER_BIT);
+    glColor3f(0, 0, 0); // Black color for lines
+    gluOrtho2D(0, 640, 0, 480); // Set 2D orthographic projection
+}
+
+// Draw object (triangle)
+void drawObject() {
+    glBegin(GL_POLYGON);
+    for (int i = 0; i < 3; i++) {
+        glVertex2f(points[i][0], points[i][1]);
+    }
+    glEnd();
+    glFlush();
+}
+
+// Apply Scaling transformation
+void scale(float sx, float sy) {
+    for (int i = 0; i < 3; i++) {
+        points[i][0] *= sx;
+        points[i][1] *= sy;
+    }
+}
+
+// Apply Rotation transformation about a given point (cx, cy)
+void rotate(float angle, float cx, float cy) {
+    float radians = angle * (M_PI / 180.0f); // Convert angle to radians
+    float cosA = cos(radians), sinA = sin(radians);
+
+    for (int i = 0; i < 3; i++) {
+        // Translate points to the origin, rotate, and then translate back
+        float x = points[i][0] - cx;
+        float y = points[i][1] - cy;
+
+        points[i][0] = cosA * x - sinA * y + cx;
+        points[i][1] = sinA * x + cosA * y + cy;
+    }
+}
+
+// Apply Reflection transformation
+void reflect() {
+    for (int i = 0; i < 3; i++) {
+        if (reflectionFlag == 1) { // Reflection about the x-axis
+            points[i][1] = -points[i][1];
+        } else if (reflectionFlag == 2) { // Reflection about the y-axis
+            points[i][0] = -points[i][0];
+        }
+    }
+}
+
+// Menu options for transformations
+void menu(int option) {
+    switch (option) {
+        case 1: // Apply Scaling
+            scale(1.5f, 1.5f); // Scale by 1.5 times
+            break;
+        case 2: // Apply Rotation
+            rotate(45.0f, 150.0f, 150.0f); // Rotate 45 degrees about (150, 150)
+            break;
+        case 3: // Reflect about X-axis
+            reflectionFlag = 1;
+            reflect();
+            break;
+        case 4: // Reflect about Y-axis
+            reflectionFlag = 2;
+            reflect();
+            break;
+        case 5: // Reset to original object
+            // Reset the original object points (Triangle)
+            points[0][0] = 100.0f, points[0][1] = 100.0f;
+            points[1][0] = 200.0f, points[1][1] = 100.0f;
+            points[2][0] = 150.0f, points[2][1] = 200.0f;
+            break;
+    }
+
+    glutPostRedisplay(); // Redraw object after transformation
+}
+
+// Draw scene and object
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    // Draw the transformed object
+    drawObject();
+
+    glFlush();
+}
+
+// Create a menu for selecting transformations
+void createMenu() {
+    glutCreateMenu(menu);
+    glutAddMenuEntry("Scale", 1);
+    glutAddMenuEntry("Rotate (45 degrees)", 2);
+    glutAddMenuEntry("Reflect about X-axis", 3);
+    glutAddMenuEntry("Reflect about Y-axis", 4);
+    glutAddMenuEntry("Reset", 5);
+    glutAttachMenu(GLUT_RIGHT_BUTTON); // Attach menu to right mouse button
+}
+
+int main(int argc, char **argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE);
+    glutInitWindowSize(640, 480);
+    glutCreateWindow("2D Transformations");
+
+    init();
+    createMenu();
+    glutDisplayFunc(display); // Call display function to render object
+    glutMainLoop(); // Enter GLUT event loop
+
+    return 0;
+}

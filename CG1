@@ -1,0 +1,56 @@
+
+/*
+Implement DDA line drawing algorithm to draw Simple line. Divide the screen
+in four quadrants with center as (0, 0). The line should work for all the slopes
+*/
+
+#include <GL/glut.h>
+#include <iostream>
+using namespace std;
+
+void drawAxes() {
+    glBegin(GL_LINES);
+    glVertex2i(-320, 0); glVertex2i(320, 0);  // X-axis
+    glVertex2i(0, -240); glVertex2i(0, 240);  // Y-axis
+    glEnd();
+}
+
+void DDA_Line(int x1, int y1, int x2, int y2) {
+    float dx = x2 - x1, dy = y2 - y1;
+    float steps = max(abs(dx), abs(dy));
+    float xInc = dx / steps, yInc = dy / steps;
+    float x = x1, y = y1;
+
+    glBegin(GL_POINTS);
+    for (int i = 0; i <= steps; i++) {
+        glVertex2i(x, y);
+        x += xInc;
+        y += yInc;
+    }
+    glEnd();
+}
+
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    glColor3f(0, 0, 0);  // Black for axes
+    drawAxes();
+    glColor3f(1, 0, 0);  // Red for line
+    DDA_Line(-100, -50, 150, 100); // Example Line (works for all slopes)
+    glFlush();
+}
+
+void init() {
+    glClearColor(1, 1, 1, 0);  // White background
+    gluOrtho2D(-320, 320, -240, 240); // Center (0,0) in middle
+}
+
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutInitWindowSize(640, 480);
+    glutCreateWindow("DDA Line with Quadrants");
+    init();
+    glutDisplayFunc(display);
+    glutMainLoop();
+}
+

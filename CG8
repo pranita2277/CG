@@ -1,0 +1,171 @@
+/*8 Implement Cohen Suterland Line clipping method to clip the line with respect the
+viewport and window. Use mouse click, keyboard interface*/
+
+#include <GL/glut.h>
+#include <iostream>
+
+using namespace std;
+
+// Define the clipping window's coordinates (left, right, bottom, top)
+float xmin = 100, ymin = 100, xmax = 500, ymax = 500;
+
+// Line coordinates
+float x1 = 150, y1 = 50, x2 = 450, y2 = 550;
+
+// Define region codes for Cohen-Sutherland algorithm
+#define INSIDE 0  // 0000
+#define LEFT 1    // 0001
+#define RIGHT 2   // 0010
+#define BOTTOM 4  // 0100
+#define TOP 8     // 1000
+
+// Compute the region code for a point (x, y)
+int computeCode(float x, float y) {
+    int code = INSIDE;
+
+    if (x < xmin)           // to the left of the window
+        code |= LEFT;
+    else if (x > xmax)      // to the right of the window
+        code |= RIGHT;
+    if (y < ymin)           // below the window
+        code |= BOTTOM;
+    else if (y > ymax)      // above the window
+        code |= TOP;
+
+    return code;
+}
+
+// Implement the Cohen-Sutherland line clipping algorithm
+void cohenSutherlandClip() {
+    int code1 = computeCode(x1, y1);
+    int code2 = computeCode(x2, y2);
+    bool accept = false;
+
+    while (true) {
+        if ((code1 == 0) && (code2 == 0)) {  // Both endpoints inside the window
+            accept = true;
+            break;
+        } else if ((code1 & code2) != 0) {  // Both endpoints outside the window in the same region
+            break;
+        } else {
+            int codeOut;
+            float x, y;
+
+            // Choose one endpoint that is outside the window
+            if (code1 != 0)
+                codeOut = code1;
+            else
+                codeOut = code2;
+
+            // Find the intersection point
+            if (codeOut & TOP) {  // Line intersects the top edge
+                x = x1 + (x2 - x1) * (ymax - y1) / (y2 - y1);
+                y = ymax;
+            } else if (codeOut & BOTTOM) {  // Line intersects the bottom edge
+                x = x1 + (x2 - x1) * (ymin - y1) / (y2 - y1);
+                y = ymin;
+            } else if (codeOut & RIGHT) {  // Line intersects the right edge
+                y = y1 + (y2 - y1) * (xmax - x1) / (x2 - x1);
+                x = xmax;
+            } else if (codeOut & LEFT) {  // Line intersects the left edge
+                y = y1 + (y2 - y1) * (xmin - x1) / (x2 - x1);
+                x = xmin;
+            }
+
+            // Update the endpoint outside the clipping window
+            if (codeOut == code1) {
+                x1 = x;
+                y1 = y;
+                code1 = computeCode(x1, y1);
+            } else {
+                x2 = x;
+                y2 = y;
+                code2 = computeCode(x2, y2);
+            }
+        }
+    }
+
+    if (accept) {
+        // Line is accepted and inside the window, draw the clipped line
+        glColor3f(1, 0, 0);  // Red color for the clipped line
+        glBegin(GL_LINES);
+        glVertex2f(x1, y1);
+        glVertex2f(x2, y2);
+        glEnd();
+        glFlush();
+    }
+}
+
+// Function to draw the clipping window
+void drawClippingWindow() {
+    glColor3f(0, 0, 0);  // Black color for the window border
+    glBegin(GL_LINE_LOOP);
+    glVertex2f(xmin, ymin);
+    glVertex2f(xmax, ymin);
+    glVertex2f(xmax, ymax);
+    glVertex2f(xmin, ymax);
+    glEnd();
+}
+
+// Function to display the scene
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    // Draw the clipping window
+    drawClippingWindow();
+
+    // Draw the line to be clipped
+    glColor3f(0, 0, 1);  // Blue color for the original line
+    glBegin(GL_LINES);
+    glVertex2f(x1, y1);
+    glVertex2f(x2, y2);
+    glEnd();
+
+    // Apply the Cohen-Sutherland line clipping
+    cohenSutherlandClip();
+
+    glutSwapBuffers();  // Swap buffers for double buffering
+}
+
+// Function to handle mouse clicks to update the clipping window
+void mouse(int button, int state, int x, int y) {
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+        xmin = x - 50;
+        ymin = 480 - y - 50;
+        xmax = x + 50;
+        ymax = 480 - y + 50;
+        glutPostRedisplay();  // Redraw the scene with the new window
+    }
+}
+
+// Function to handle keyboard input for changing the line's position
+void keyboard(unsigned char key, int x, int y) {
+    if (key == 'r') {  // Reset the line coordinates
+        x1 = 150; y1 = 50;
+        x2 = 450; y2 = 550;
+        glutPostRedisplay();  // Redraw the scene
+    }
+}
+
+void init() {
+    glClearColor(1.0, 1.0, 1.0, 1.0);  // Set background color to white
+    gluOrtho2D(0, 640, 0, 480);  // Set up the 2D orthographic projection
+}
+
+// Main function to initialize and start the program
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);  // Use double buffering and RGB color mode
+    glutInitWindowSize(640, 480);  // Set the window size
+    glutCreateWindow("Cohen-Sutherland Line Clipping");
+
+    init();  // Initialize OpenGL settings
+
+    glutDisplayFunc(display);  // Set display function
+    glutMouseFunc(mouse);      // Set mouse click function
+    glutKeyboardFunc(keyboard);  // Set keyboard function
+
+    glutMainLoop();  // Start the GLUT event loop
+
+    return 0;
+}

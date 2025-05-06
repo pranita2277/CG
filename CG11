@@ -1,0 +1,102 @@
+/*
+11 Generate fractal patterns using Bezier Curve
+*/
+
+#include <iostream>
+#include <GL/glut.h>
+#include <cmath>
+
+using namespace std;
+
+// Control points for the Bezier curve
+float P0[] = {100, 100};
+float P1[] = {150, 250};
+float P2[] = {250, 250};
+float P3[] = {300, 100};
+
+int maxRecursionDepth = 5; // Maximum depth for recursion
+
+// Function to calculate a point on the Bezier curve using the cubic formula
+void bezier(float t, float* P0, float* P1, float* P2, float* P3, float* result) {
+    result[0] = pow(1 - t, 3) * P0[0] + 3 * pow(1 - t, 2) * t * P1[0] + 3 * (1 - t) * pow(t, 2) * P2[0] + pow(t, 3) * P3[0];
+    result[1] = pow(1 - t, 3) * P0[1] + 3 * pow(1 - t, 2) * t * P1[1] + 3 * (1 - t) * pow(t, 2) * P2[1] + pow(t, 3) * P3[1];
+}
+
+// Recursive function to generate the fractal pattern using Bezier curves
+void fractalBezier(float* P0, float* P1, float* P2, float* P3, int depth) {
+    if (depth == 0) {
+        // Base case: Draw the Bezier curve
+        float step = 0.01; // Step size for t
+        float prevPoint[2], currPoint[2];
+        bezier(0, P0, P1, P2, P3, prevPoint);
+        glBegin(GL_POINTS);
+        for (float t = step; t <= 1.0f; t += step) {
+            bezier(t, P0, P1, P2, P3, currPoint);
+            glVertex2f(currPoint[0], currPoint[1]);
+        }
+        glEnd();
+        glFlush();
+    } else {
+        // Recursive case: Subdivide the Bezier curve into smaller curves
+        float mid1[2], mid2[2], mid3[2];
+
+        // Find midpoints for subdivision
+        float midP0P1[2], midP1P2[2], midP2P3[2], mid1_2[2], mid2_3[2];
+
+        // Midpoint between P0 and P1
+        midP0P1[0] = (P0[0] + P1[0]) / 2;
+        midP0P1[1] = (P0[1] + P1[1]) / 2;
+
+        // Midpoint between P1 and P2
+        midP1P2[0] = (P1[0] + P2[0]) / 2;
+        midP1P2[1] = (P1[1] + P2[1]) / 2;
+
+        // Midpoint between P2 and P3
+        midP2P3[0] = (P2[0] + P3[0]) / 2;
+        midP2P3[1] = (P2[1] + P3[1]) / 2;
+
+        // Midpoint between midP0P1 and midP1P2
+        mid1_2[0] = (midP0P1[0] + midP1P2[0]) / 2;
+        mid1_2[1] = (midP0P1[1] + midP1P2[1]) / 2;
+
+        // Midpoint between midP1P2 and midP2P3
+        mid2_3[0] = (midP1P2[0] + midP2P3[0]) / 2;
+        mid2_3[1] = (midP1P2[1] + midP2P3[1]) / 2;
+
+        // Final midpoint between mid1_2 and mid2_3
+        mid3[0] = (mid1_2[0] + mid2_3[0]) / 2;
+        mid3[1] = (mid1_2[1] + mid2_3[1]) / 2;
+
+        // Recursively draw the fractal by subdividing the Bezier curve
+        fractalBezier(P0, midP0P1, mid1_2, mid3, depth - 1);
+        fractalBezier(mid3, mid2_3, midP2P3, P3, depth - 1);
+    }
+}
+
+// Initialization and setup for OpenGL
+void init() {
+    glClearColor(1, 1, 1, 0);  // White background
+    glClear(GL_COLOR_BUFFER_BIT);
+    glColor3f(0, 0, 0);        // Black color for lines
+    gluOrtho2D(0, 640, 0, 480); // Set the orthographic projection
+}
+
+// Display the fractal pattern using Bezier curve recursion
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    fractalBezier(P0, P1, P2, P3, maxRecursionDepth);  // Start with the initial Bezier curve
+    glFlush();
+}
+
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE);
+    glutInitWindowSize(640, 480);
+    glutCreateWindow("Fractal Pattern Using Bezier Curve");
+
+    init();
+    glutDisplayFunc(display); // Display function to render the fractal
+    glutMainLoop(); // Start the OpenGL event loop
+
+    return 0;
+}

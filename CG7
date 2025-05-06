@@ -1,0 +1,151 @@
+/*
+7 Implement Cohen Suterland polygon clipping method to clip the polygon with
+respect the viewport and window. Use mouse click, keyboard interface
+*/
+
+#include <GL/glut.h>
+#include <iostream>
+#include <vector>
+using namespace std;
+
+// Define window boundary
+int xmin = 100, ymin = 100, xmax = 400, ymax = 400;
+
+struct Point {
+    int x, y;
+};
+
+vector<Point> polygon;
+
+// Region Codes
+const int INSIDE = 0; // 0000
+const int LEFT = 1;   // 0001
+const int RIGHT = 2;  // 0010
+const int BOTTOM = 4; // 0100
+const int TOP = 8;    // 1000
+
+int computeCode(int x, int y) {
+    int code = INSIDE;
+    if (x < xmin) code |= LEFT;
+    else if (x > xmax) code |= RIGHT;
+    if (y < ymin) code |= BOTTOM;
+    else if (y > ymax) code |= TOP;
+    return code;
+}
+
+// Cohen-Sutherland Line Clipping
+bool cohenSutherlandClip(Point& p1, Point& p2) {
+    int code1 = computeCode(p1.x, p1.y);
+    int code2 = computeCode(p2.x, p2.y);
+    bool accept = false;
+
+    while (true) {
+        if ((code1 == 0) && (code2 == 0)) {
+            accept = true;
+            break;
+        } else if (code1 & code2) {
+            break;
+        } else {
+            int codeOut;
+            int x, y;
+
+            if (code1 != 0)
+                codeOut = code1;
+            else
+                codeOut = code2;
+
+            if (codeOut & TOP) {
+                x = p1.x + (p2.x - p1.x) * (ymax - p1.y) / (p2.y - p1.y);
+                y = ymax;
+            } else if (codeOut & BOTTOM) {
+                x = p1.x + (p2.x - p1.x) * (ymin - p1.y) / (p2.y - p1.y);
+                y = ymin;
+            } else if (codeOut & RIGHT) {
+                y = p1.y + (p2.y - p1.y) * (xmax - p1.x) / (p2.x - p1.x);
+                x = xmax;
+            } else if (codeOut & LEFT) {
+                y = p1.y + (p2.y - p1.y) * (xmin - p1.x) / (p2.x - p1.x);
+                x = xmin;
+            }
+
+            if (codeOut == code1) {
+                p1.x = x;
+                p1.y = y;
+                code1 = computeCode(p1.x, p1.y);
+            } else {
+                p2.x = x;
+                p2.y = y;
+                code2 = computeCode(p2.x, p2.y);
+            }
+        }
+    }
+    return accept;
+}
+
+void drawWindow() {
+    glColor3f(0, 0, 1); // Blue window
+    glBegin(GL_LINE_LOOP);
+    glVertex2i(xmin, ymin);
+    glVertex2i(xmax, ymin);
+    glVertex2i(xmax, ymax);
+    glVertex2i(xmin, ymax);
+    glEnd();
+}
+
+void drawPolygon(vector<Point> poly, float r, float g, float b) {
+    glColor3f(r, g, b);
+    glBegin(GL_LINE_LOOP);
+    for (auto p : poly)
+        glVertex2i(p.x, p.y);
+    glEnd();
+}
+
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    drawWindow();
+    drawPolygon(polygon, 1, 0, 0); // Red polygon
+    glFlush();
+}
+
+void mouse(int button, int state, int x, int y) {
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+        polygon.push_back({x, 480 - y}); // Adjust for OpenGL coordinates
+        glutPostRedisplay();
+    }
+}
+
+void keyboard(unsigned char key, int x, int y) {
+    if (key == 'c' || key == 'C') { // Clip when 'C' is pressed
+        vector<Point> clipped;
+        for (size_t i = 0; i < polygon.size(); i++) {
+            Point p1 = polygon[i];
+            Point p2 = polygon[(i + 1) % polygon.size()];
+            if (cohenSutherlandClip(p1, p2)) {
+                clipped.push_back(p1);
+                clipped.push_back(p2);
+            }
+        }
+        polygon = clipped;
+        glutPostRedisplay();
+    } else if (key == 'r' || key == 'R') { // Reset with 'R'
+        polygon.clear();
+        glutPostRedisplay();
+    }
+}
+
+void init() {
+    glClearColor(1, 1, 1, 1); // White background
+    gluOrtho2D(0, 640, 0, 480);
+}
+
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutInitWindowSize(640, 480);
+    glutCreateWindow("Cohen-Sutherland Polygon Clipping");
+    init();
+    glutDisplayFunc(display);
+    glutMouseFunc(mouse);
+    glutKeyboardFunc(keyboard);
+    glutMainLoop();
+}

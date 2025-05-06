@@ -1,0 +1,98 @@
+/*
+12 Generate fractal patterns using Koch Curve.
+*/
+#include <iostream>
+#include <cmath>
+#include <GL/glut.h>
+using namespace std;
+
+// Initial coordinates, length, angle, and iteration count
+double startX, startY, lineLength, angle;
+int iterations;
+
+// OpenGL initialization function
+void init() {
+    glClearColor(1.0, 1.0, 1.0, 0.0);  // Set background color to white
+    glMatrixMode(GL_PROJECTION);
+    gluOrtho2D(0, 640, 0, 480);  // Set up 2D orthographic projection
+    glClear(GL_COLOR_BUFFER_BIT);  // Clear the color buffer
+}
+
+// Function to draw a line segment from (x1, y1) to (x2, y2)
+void drawLine(double x1, double y1, double x2, double y2) {
+    glColor3f(0, 1, 0);  // Set the color to green
+    glBegin(GL_LINES);
+    glVertex2d(x1, y1);  // Start point
+    glVertex2d(x2, y2);  // End point
+    glEnd();
+    glFlush();  // Ensure that the drawing is completed
+}
+
+// Recursive function to generate the Koch curve
+void kochCurve(double x, double y, double len, double angle, int depth) {
+    if (depth == 0) {
+        // Base case: Draw a straight line
+        double xEnd = x + len * cos(angle * M_PI / 180.0);
+        double yEnd = y + len * sin(angle * M_PI / 180.0);
+        drawLine(x, y, xEnd, yEnd);
+        return;
+    }
+    
+    // Calculate the length of each sub-segment
+    len /= 3.0;
+
+    // First recursive call for the first segment
+    kochCurve(x, y, len, angle, depth - 1);
+
+    // Calculate the end point of the first segment
+    x += len * cos(angle * M_PI / 180.0);
+    y += len * sin(angle * M_PI / 180.0);
+
+    // Second recursive call for the second segment (rotate 60 degrees)
+    kochCurve(x, y, len, angle + 60.0, depth - 1);
+
+    // Calculate the end point of the second segment
+    x += len * cos((angle + 60.0) * M_PI / 180.0);
+    y += len * sin((angle + 60.0) * M_PI / 180.0);
+
+    // Third recursive call for the third segment (rotate -60 degrees)
+    kochCurve(x, y, len, angle - 60.0, depth - 1);
+
+    // Calculate the end point of the third segment
+    x += len * cos((angle - 60.0) * M_PI / 180.0);
+    y += len * sin((angle - 60.0) * M_PI / 180.0);
+
+    // Fourth recursive call for the final segment
+    kochCurve(x, y, len, angle, depth - 1);
+}
+
+// Main algorithm to initiate the Koch curve drawing
+void drawKochCurve() {
+    kochCurve(startX, startY, lineLength, angle, iterations);
+}
+
+// Main function to initialize the program
+int main(int argc, char** argv) {
+    // Input values from the user
+    cout << "\nEnter the starting point (x, y): ";
+    cin >> startX >> startY;
+
+    cout << "\nEnter the length of the line segment and the angle of the line: ";
+    cin >> lineLength >> angle;
+
+    cout << "\nEnter the number of iterations: ";
+    cin >> iterations;
+
+    // Initialize GLUT
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutInitWindowSize(640, 480);  // Set window size
+    glutInitWindowPosition(200, 200);  // Set window position
+    glutCreateWindow("Koch Curve Fractal");
+
+    init();  // Initialize OpenGL settings
+    glutDisplayFunc(drawKochCurve);  // Register the drawing function
+
+    glutMainLoop();  // Start the GLUT event loop
+    return 0;
+}

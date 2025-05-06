@@ -1,0 +1,92 @@
+#include <GL/glut.h>
+#include <cmath>
+#include <iostream>
+
+// Global variables for animation
+float angle = 0.0f;      // Rotation angle of the object
+float scale = 1.0f;      // Scaling factor for the object
+float moveX = 0.0f;      // Movement along X-axis
+float moveY = 0.0f;      // Movement along Y-axis
+
+// Function to initialize OpenGL settings
+void init() {
+    glClearColor(1.0, 1.0, 1.0, 1.0);  // Set the background color to white
+    glMatrixMode(GL_PROJECTION);
+    gluOrtho2D(0, 640, 0, 480);  // Set the 2D orthographic projection
+    glClear(GL_COLOR_BUFFER_BIT);  // Clear the window
+}
+
+// Function to draw a square
+void drawSquare(float size) {
+    glBegin(GL_QUADS);
+        glVertex2f(-size / 2, -size / 2);  // Bottom-left corner
+        glVertex2f(size / 2, -size / 2);   // Bottom-right corner
+        glVertex2f(size / 2, size / 2);    // Top-right corner
+        glVertex2f(-size / 2, size / 2);   // Top-left corner
+    glEnd();
+}
+
+// Function to display the animation
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);  // Clear the screen
+
+    glLoadIdentity();  // Reset the transformation matrix
+
+    // Apply transformations (translation, rotation, scaling)
+    glTranslatef(moveX, moveY, 0);  // Translate the object
+    glRotatef(angle, 0, 0, 1);      // Rotate the object around Z-axis
+    glScalef(scale, scale, 1);      // Scale the object
+
+    // Set the color for the square (e.g., red)
+    glColor3f(1.0, 0.0, 0.0);  // Red color
+
+    // Draw the square
+    drawSquare(100.0f);  // Square with side length of 100 units
+
+    glutSwapBuffers();  // Swap buffers for double buffering
+}
+
+// Function to update animation parameters
+void update(int value) {
+    // Update the rotation angle
+    angle += 2.0f;  
+    if (angle > 360) {
+        angle -= 360;  // Reset angle after full rotation
+    }
+
+    // Update translation (move the square across the screen)
+    moveX += 1.0f;
+    if (moveX > 640) {
+        moveX = -640;  // Reset the position when it moves off the screen
+    }
+
+    // Update scaling factor for a pulsating effect
+    scale = 1.0f + 0.5f * sin(angle * (M_PI / 180));
+
+    // Redraw the scene with new values
+    glutPostRedisplay();
+
+    // Call the update function again after 16ms (~60fps)
+    glutTimerFunc(16, update, 0);
+}
+
+// Main function
+int main(int argc, char** argv) {
+    // Initialize GLUT
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);  // Double buffering
+    glutInitWindowSize(640, 480);  // Set the window size
+    glutCreateWindow("Animation Principles (Rotation, Scaling, Translation)");
+
+    // Initialize OpenGL settings
+    init();
+
+    // Set display function and update function
+    glutDisplayFunc(display);
+    glutTimerFunc(16, update, 0);  // Start the update loop
+
+    // Start the GLUT event loop
+    glutMainLoop();
+
+    return 0;
+}
